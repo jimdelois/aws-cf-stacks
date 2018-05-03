@@ -1,0 +1,112 @@
+Parameters:
+  SecurityGroupIngressCIDRHome:
+    Description: The CIDR of my "Home" location
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: Must be a valid IP CIDR (X.X.X.X/X).
+  SecurityGroupIngressCIDRWork:
+    Description: The CIDR of my "Work" location
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: Must be a valid IP CIDR (X.X.X.X/X).
+  SelectedVPC:
+    Description: The VPC for these Sucurity Groups
+    Type: AWS::EC2::VPC::Id
+
+Resources:
+  PersonalSSHIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Personal SSH Ingress
+      GroupDescription: Direct access via SSH from My Location(s)
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+      - CidrIp: !Ref SecurityGroupIngressCIDRHome
+        Description: Home
+        IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+      - CidrIp: !Ref SecurityGroupIngressCIDRWork
+        Description: Work
+        IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+
+  PersonalMySQLIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Personal MySQL Ingress
+      GroupDescription: Direct MySQL access from My Location(s)
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+      - CidrIp: !Ref SecurityGroupIngressCIDRHome
+        Description: Home
+        IpProtocol: tcp
+        FromPort: 3306
+        ToPort: 3306
+      - CidrIp: !Ref SecurityGroupIngressCIDRWork
+        Description: Work
+        IpProtocol: tcp
+        FromPort: 3306
+        ToPort: 3306
+
+  PersonalPostgresIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Personal Postgres Ingress
+      GroupDescription: Direct Postgres access from My Location(s)
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+      - CidrIp: !Ref SecurityGroupIngressCIDRHome
+        Description: Home
+        IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+      - CidrIp: !Ref SecurityGroupIngressCIDRWork
+        Description: Work
+        IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+
+Outputs:
+  PersonalSSHIngress:
+    Description: Direct access via SSH from My Location(s)
+    Value: !Ref PersonalSSHIngress
+    Export:
+      Name: PersonalSSHIngress
+  PersonalMySQLIngress:
+    Description: Direct MySQL access from My Location(s)
+    Value: !Ref PersonalMySQLIngress
+    Export:
+      Name: PersonalMySQLIngress
+  PersonalPostgresIngress:
+    Description: Direct Postgres access from My Location(s)
+    Value: !Ref PersonalPostgresIngress
+    Export:
+      Name: PersonalPostgresIngress
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Personal CIDRs"
+        Parameters:
+          - SecurityGroupIngressCIDRHome
+          - SecurityGroupIngressCIDRWork
+      - Label:
+          default: "VPC Configuration"
+        Parameters:
+          - SelectedVPC
+    ParameterLabels:
+      SecurityGroupIngressCIDRHome:
+        default: "Home CIDR"
+      SecurityGroupIngressCIDRWork:
+        default: "Work CIDR"
+      SelectedVPC:
+        default: "VPC Selection"

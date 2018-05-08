@@ -1,3 +1,6 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Manages baseline/universal Security Groups for my most common use-cases."
+
 Parameters:
   SecurityGroupIngressCIDRHome:
     Description: The CIDR of my "Home" location

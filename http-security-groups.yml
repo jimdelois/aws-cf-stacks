@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Provides Common HTTP/HTTPS-related Security Groups"
+
+# TODO: Paramaterize the CIDRs (and names) in this file for more generic use?
+
+Parameters:
+  SelectedVPC:
+    Description: "The VPC in which to install Kong"
+    Type: "AWS::EC2::VPC::Id"
+
+Resources:
+  PublicHTTPIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Public HTTP Ingress
+      GroupDescription: Public access via HTTP from all locations
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        Description: Public HTTP
+        IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+
+  PublicHTTPSIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Public HTTPS Ingress
+      GroupDescription: Public access via HTTPS from all locations
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        Description: Public HTTPS
+        IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+
+Outputs:
+  PublicHTTPIngress:
+    Description: Public access via HTTP from all locations
+    Value: !Ref PublicHTTPIngress
+    Export:
+      Name: PublicHTTPIngress
+  PublicHTTPSIngress:
+    Description: Public access via HTTPS from all locations
+    Value: !Ref PublicHTTPSIngress
+    Export:
+      Name: PublicHTTPSIngress

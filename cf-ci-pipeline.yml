@@ -1,0 +1,252 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  This AWS CloudFormation Stack will be used to test/release the creation of other
+  AWS CloudFormation Stacks. Several Stacks will need to be created for any project
+  (e.g., core-resources, ci-pipeline, etc), and this generic Stack creates a pipeline
+  to continuously integrate changes in order to aid their development.
+
+Parameters:
+  PipelineName:
+    Description: A name for the pipeline
+    Type: String
+  StackTemplate:
+    Description: The file name of the Stack template
+    Type: String
+  TestStackName:
+    Description: A name for the test CF stack
+    Type: String
+  TestStackConfig:
+    Description: The configuration file name for the test stack
+    Type: String
+  ProdStackName:
+    Description: A name for the final CF stack
+    Type: String
+  ProdStackConfig:
+    Description: The configuration file name for the production stack
+    Type: String
+  ChangeSetName:
+    Default: StackUpdate
+    Description: A name for the change set associated with this adjustment to the Stack
+    Type: String
+  ApprovalEmail:
+    Description: The email address where CodePipeline sends pipeline notifications
+    Type: String
+  GitHubUser:
+    Description: The username of the repository owner
+    Type: String
+  GitHubRepo:
+    Description: The name of the repository (not including the URL or extension)
+    Type: String
+  GitHubBranch:
+    Description: The branch to monitor for Stack updates
+    Type: String
+  GitHubToken:
+    Description: The Auth Token of any user with repository permissions (e.g., CI user)
+    Type: String
+    NoEcho: true
+
+
+Resources:
+
+  ArtifactStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+
+  CodePipelineSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: !Ref ApprovalEmail
+          Protocol: email
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Ref 'ArtifactStoreBucket'
+      DisableInboundStageTransitions: []
+      Name: !Ref 'PipelineName'
+      RoleArn: !GetAtt PipelineRole.Arn
+      Stages:
+      - Name: Source
+        Actions:
+        - Name: RepoApp
+          ActionTypeId:
+            Category: Source
+            Owner: ThirdParty
+            Version: 1
+            Provider: GitHub
+          Configuration:
+            Owner: !Ref GitHubUser
+            Repo: !Ref GitHubRepo
+            Branch: !Ref GitHubBranch
+            OAuthToken: !Ref GitHubToken
+          OutputArtifacts:
+          - Name: RepoApp
+          RunOrder: 1
+      - Name: TestStage
+        Actions:
+        - Name: CreateStack
+          ActionTypeId:
+            Category: Deploy
+            Owner: AWS
+            Provider: CloudFormation
+            Version: 1
+          InputArtifacts:
+          - Name: RepoApp
+          Configuration:
+            ActionMode: REPLACE_ON_FAILURE
+            RoleArn: !GetAtt [CloudFormationRole, Arn]
+            StackName: !Ref TestStackName
+            TemplateConfiguration: !Sub "RepoApp::${TestStackConfig}"
+            TemplatePath: !Sub "RepoApp::${StackTemplate}"
+          RunOrder: 1
+        - Name: ApproveTestStack
+          ActionTypeId:
+            Category: Approval
+            Owner: AWS
+            Provider: Manual
+            Version: 1
+          Configuration:
+            NotificationArn: !Ref CodePipelineSNSTopic
+            CustomData: !Sub 'Do you want to create a change set against the production stack and delete the ${TestStackName} stack?'
+          RunOrder: 2
+        - Name: DeleteTestStack
+          ActionTypeId:
+            Category: Deploy
+            Owner: AWS
+            Provider: CloudFormation
+            Version: 1
+          Configuration:
+            ActionMode: DELETE_ONLY
+            RoleArn: !GetAtt [CloudFormationRole, Arn]
+            StackName: !Ref TestStackName
+          RunOrder: 3
+      - Name: ProdStage
+        Actions:
+        - Name: CreateChangeSet
+          ActionTypeId:
+            Category: Deploy
+            Owner: AWS
+            Provider: CloudFormation
+            Version: 1
+          InputArtifacts:
+          - Name: RepoApp
+          Configuration:
+            ActionMode: CHANGE_SET_REPLACE
+            RoleArn: !GetAtt [CloudFormationRole, Arn]
+            StackName: !Ref ProdStackName
+            ChangeSetName: !Ref ChangeSetName
+            TemplateConfiguration: !Sub "RepoApp::${ProdStackConfig}"
+            TemplatePath: !Sub "RepoApp::${StackTemplate}"
+          RunOrder: 1
+        - Name: ApproveChangeSet
+          ActionTypeId:
+            Category: Approval
+            Owner: AWS
+            Provider: Manual
+            Version: 1
+          Configuration:
+            NotificationArn: !Ref CodePipelineSNSTopic
+            CustomData: !Sub 'A new change set was created for the ${ProdStackName} stack. Do you want to implement the changes?'
+          RunOrder: 2
+        - Name: ExecuteChangeSet
+          ActionTypeId:
+            Category: Deploy
+            Owner: AWS
+            Provider: CloudFormation
+            Version: 1
+          Configuration:
+            ActionMode: CHANGE_SET_EXECUTE
+            ChangeSetName: !Ref ChangeSetName
+            RoleArn: !GetAtt [CloudFormationRole, Arn]
+            StackName: !Ref ProdStackName
+          RunOrder: 3
+
+  CloudFormationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service:
+            - cloudformation.amazonaws.com
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyName: CloudFormationRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action:
+            - 'ec2:*'
+            Effect: Allow
+            Resource: '*'
+
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service:
+            - codepipeline.amazonaws.com
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyName: CodePipelineAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action:
+            - 's3:*'
+            - 'cloudformation:CreateStack'
+            - 'cloudformation:DescribeStacks'
+            - 'cloudformation:DeleteStack'
+            - 'cloudformation:UpdateStack'
+            - 'cloudformation:CreateChangeSet'
+            - 'cloudformation:ExecuteChangeSet'
+            - 'cloudformation:DeleteChangeSet'
+            - 'cloudformation:DescribeChangeSet'
+            - 'cloudformation:SetStackPolicy'
+            - 'iam:PassRole'
+            - 'sns:Publish'
+            Effect: Allow
+            Resource: '*'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: "CodePipeline Settings"
+      Parameters:
+      - PipelineName
+      - ApprovalEmail
+    - Label:
+        default: "GitHub (Pipeline Source) Settings"
+      Parameters:
+      - GitHubUser
+      - GitHubRepo
+      - GitHubBranch
+      - GitHubToken
+    - Label:
+        default: "Test Stack Settings"
+      Parameters:
+      - TestStackName
+      - StackTemplate
+      - TestStackConfig
+    - Label:
+        default: "Production Stack Settings"
+      Parameters:
+      - ChangeSetName
+      - ProdStackName
+      - ProdStackConfig

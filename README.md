@@ -6,7 +6,7 @@ Generic CloudFormation stacks for personal projects
 Example CLI query to install all Personal Security Groups
 
 ```bash
-aws cloudformation create-stack  --stack-name personal-security-groups \
+aws cloudformation create-stack --stack-name personal-security-groups \
     --template-body file://personal-security-groups.yml \
     --parameters \
     ParameterKey=SelectedVPC,ParameterValue="" \
@@ -36,16 +36,72 @@ Alternatively, using a file (which is ignored from this repo on account of obscu
 Thence,
 
 ```bash
+aws cloudformation create-stack --stack-name personal-security-groups \
+    --template-body file://personal-security-groups.yml \
+    --parameters file://personal-security-groups-parameters.json
+```
+
+For updates, perform the following; rinse, and repeat:
+
+```bash
+aws cloudformation update-stack --stack-name personal-security-groups \
+    --template-body file://personal-security-groups.yml \
+    --parameters file://personal-security-groups-parameters.json
+```
+
+## HTTP Security Groups
+
+Security Groups for common HTTP(S) applications.
+
+```base
+aws cloudformation create-stack --stack-name http-security-groups \
+    --template-body file://http-security-groups.yml \
+    --parameters file://http-security-groups-parameters.json
+```
+
+## ECS Profiles
+
+Manages Instance Profiles (Roles) for Common ECS Usage
+
+```base
+aws cloudformation create-stack --stack-name ecs-profiles \
+    --template-body file://ecs-profiles.yml \
+    --capabilities CAPABILITY_IAM
+```
+
+## CloudFormation CI Pipeline
+
+As CloudFormation promotes managing infrastructure with code, it is possible
+to version this code in an SCM (like GitHub) and, consequently, test and release
+Change Sets to CloudFormation Stacks.
+
+This template creates a CodePipeline project which pulls changes from a GitHub
+repository, deploys the Stack changes for review and, if approved, creates a
+Change Set which can then be applied to the "Production" Stack. The test
+Stack is destroyed after approval.
+
+Example CLI query to create this Stack (using Change Sets):
+
+```bash
 aws cloudformation create-change-set --stack-name personal-security-groups \
     --template-body file://personal-security-groups.yml \
     --parameters file://personal-security-groups-parameters.json \
     --change-set-type CREATE --change-set-name "InitialRevision"
 ```
 
+For an update updates, perform the following, rinse, and repeat:
+
+```bash
+aws cloudformation create-change-set --stack-name cf-ci-pipeline \
+    --template-body file://cf-ci-pipeline.yml \
+    --parameters file://cf-ci-pipeline-parameters.json \
+    --change-set-type UPDATE --change-set-name "NewRevision"
+```
+
 Review the requested change set (or use the ARN):
 
 ```bash
-aws cloudformation describe-change-set --change-set-name "InitialRevision" --stack-name personal-security-groups
+aws cloudformation describe-change-set --change-set-name "InitialRevision" --stack-name cf-ci-pipeline
 ```
 
 Execute the change set:
@@ -54,33 +110,10 @@ Execute the change set:
 aws cloudformation execute-change-set --change-set-name ARN_GOES_HERE
 ```
 
-For updates, perform the following, rinse, and repeat:
 
-```bash
-aws cloudformation create-change-set --stack-name personal-security-groups \
-    --template-body file://personal-security-groups.yml \
-    --parameters file://personal-security-groups-parameters.json \
-    --change-set-type UPDATE --change-set-name "NewRevision"
-```
 
-## HTTP Security Groups
 
-Security Groups for common HTTP/S applications.
 
-```base
-aws cloudformation create-change-set --stack-name http-security-groups \
-    --template-body file://http-security-groups.yml \
-    --parameters file://http-security-groups-parameters.json \
-    --change-set-type CREATE --change-set-name "InitialRevision"
-```
-
-## ECS Profiles
-
-Manages Instance Profiles (Roles) for Common ECS Usage
-
-```base
-aws cloudformation create-change-set --stack-name ecs-profiles \
-    --template-body file://ecs-profiles.yml \
-    --capabilities CAPABILITY_IAM \
-    --change-set-type CREATE --change-set-name "InitialRevision"
-```
+aws cloudformation create-stack --stack-name test-params-test \
+    --template-body file://cf-pipeline-test.yml \
+    --parameters file://cf-pipeline-parameters-test.json

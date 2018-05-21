@@ -83,22 +83,17 @@ Stack is destroyed after approval.
 Example CLI query to create this Stack (using Change Sets):
 
 ```bash
-aws cloudformation create-change-set --stack-name personal-security-groups \
-    --template-body file://personal-security-groups.yml \
-    --parameters file://personal-security-groups-parameters.json \
-    --change-set-type CREATE --change-set-name "InitialRevision"
-```
-
-For an update updates, perform the following, rinse, and repeat:
-
-```bash
 aws cloudformation create-change-set --stack-name cf-ci-pipeline \
     --template-body file://cf-ci-pipeline.yml \
     --parameters file://cf-ci-pipeline-parameters.json \
-    --change-set-type UPDATE --change-set-name "NewRevision"
+    --capabilities CAPABILITY_IAM \
+    --change-set-type CREATE --change-set-name "InitialRevision"
 ```
 
-Review the requested change set (or use the ARN):
+*Note:* The following two examples could use either the
+`change-set-name/stack-name` combination, or the `ARN`  value only
+
+Review the requested change set:
 
 ```bash
 aws cloudformation describe-change-set --change-set-name "InitialRevision" --stack-name cf-ci-pipeline
@@ -111,9 +106,12 @@ aws cloudformation execute-change-set --change-set-name ARN_GOES_HERE
 ```
 
 
+For updates, perform the following; rinse, and repeat:
 
-
-
-aws cloudformation create-stack --stack-name test-params-test \
-    --template-body file://cf-pipeline-test.yml \
-    --parameters file://cf-pipeline-parameters-test.json
+```bash
+aws cloudformation create-change-set --stack-name cf-ci-pipeline \
+    --template-body file://cf-ci-pipeline.yml \
+    --parameters file://cf-ci-pipeline-parameters.json \
+    --capabilities CAPABILITY_IAM \
+    --change-set-type UPDATE --change-set-name "NewRevision"
+```

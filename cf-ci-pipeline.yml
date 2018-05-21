@@ -5,6 +5,10 @@ Description: >
   (e.g., core-resources, ci-pipeline, etc), and this generic Stack creates a pipeline
   to continuously integrate changes in order to aid their development.
 
+# TODO: Revisit Capabilities and IAM roles; Build conditionally
+# This is a handy reference:
+# - https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-iam-template.html#using-iam-capabilities
+
 Parameters:
   PipelineName:
     Description: A name for the pipeline
@@ -103,6 +107,7 @@ Resources:
             StackName: !Ref TestStackName
             TemplateConfiguration: !Sub "RepoApp::${TestStackConfig}"
             TemplatePath: !Sub "RepoApp::${StackTemplate}"
+            Capabilities: CAPABILITY_IAM
           RunOrder: 1
         - Name: ApproveTestStack
           ActionTypeId:
@@ -124,6 +129,7 @@ Resources:
             ActionMode: DELETE_ONLY
             RoleArn: !GetAtt [CloudFormationRole, Arn]
             StackName: !Ref TestStackName
+            Capabilities: CAPABILITY_IAM
           RunOrder: 3
       - Name: ProdStage
         Actions:
@@ -142,6 +148,7 @@ Resources:
             ChangeSetName: !Ref ChangeSetName
             TemplateConfiguration: !Sub "RepoApp::${ProdStackConfig}"
             TemplatePath: !Sub "RepoApp::${StackTemplate}"
+            Capabilities: CAPABILITY_IAM
           RunOrder: 1
         - Name: ApproveChangeSet
           ActionTypeId:
@@ -164,6 +171,7 @@ Resources:
             ChangeSetName: !Ref ChangeSetName
             RoleArn: !GetAtt [CloudFormationRole, Arn]
             StackName: !Ref ProdStackName
+            Capabilities: CAPABILITY_IAM
           RunOrder: 3
 
   CloudFormationRole:

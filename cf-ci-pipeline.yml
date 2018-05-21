@@ -194,6 +194,9 @@ Resources:
           Statement:
           - Action:
             - 'ec2:*'
+            - 'ecs:*'
+            - 'ssm:*'
+            - 'elasticloadbalancing:*'
             Effect: Allow
             Resource: '*'
 

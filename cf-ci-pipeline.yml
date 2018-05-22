@@ -197,6 +197,7 @@ Resources:
             - 'ecs:*'
             - 'ssm:*'
             - 'elasticloadbalancing:*'
+            - 'iam:PassRole'
             Effect: Allow
             Resource: '*'
 

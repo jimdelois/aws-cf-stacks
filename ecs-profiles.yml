@@ -31,6 +31,8 @@ Resources:
             Principal:
               Service:
                 - "ecs.amazonaws.com"
+                - "ec2.amazonaws.com"
+                - "ecs-tasks.amazonaws.com"
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:

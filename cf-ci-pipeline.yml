@@ -119,19 +119,7 @@ Resources:
             NotificationArn: !Ref CodePipelineSNSTopic
             CustomData: !Sub 'Do you want to create a change set against the production stack and delete the ${TestStackName} stack?'
           RunOrder: 2
-        - Name: DeleteTestStack
-          ActionTypeId:
-            Category: Deploy
-            Owner: AWS
-            Provider: CloudFormation
-            Version: 1
-          Configuration:
-            ActionMode: DELETE_ONLY
-            RoleArn: !GetAtt [CloudFormationRole, Arn]
-            StackName: !Ref TestStackName
-            Capabilities: CAPABILITY_IAM
-          RunOrder: 3
-      - Name: ProdStage
+      - Name: PrepareStage
         Actions:
         - Name: CreateChangeSet
           ActionTypeId:
@@ -150,6 +138,18 @@ Resources:
             TemplatePath: !Sub "RepoApp::${StackTemplate}"
             Capabilities: CAPABILITY_IAM
           RunOrder: 1
+        - Name: DeleteTestStack
+          ActionTypeId:
+            Category: Deploy
+            Owner: AWS
+            Provider: CloudFormation
+            Version: 1
+          Configuration:
+            ActionMode: DELETE_ONLY
+            RoleArn: !GetAtt [CloudFormationRole, Arn]
+            StackName: !Ref TestStackName
+            Capabilities: CAPABILITY_IAM
+          RunOrder: 1
         - Name: ApproveChangeSet
           ActionTypeId:
             Category: Approval
@@ -160,6 +160,8 @@ Resources:
             NotificationArn: !Ref CodePipelineSNSTopic
             CustomData: !Sub 'A new change set was created for the ${ProdStackName} stack. Do you want to implement the changes?'
           RunOrder: 2
+      - Name: ProdStage
+        Actions:
         - Name: ExecuteChangeSet
           ActionTypeId:
             Category: Deploy
@@ -172,7 +174,7 @@ Resources:
             RoleArn: !GetAtt [CloudFormationRole, Arn]
             StackName: !Ref ProdStackName
             Capabilities: CAPABILITY_IAM
-          RunOrder: 3
+          RunOrder: 1
 
   CloudFormationRole:
     Type: AWS::IAM::Role

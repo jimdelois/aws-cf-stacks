@@ -77,6 +77,24 @@ Resources:
         FromPort: 5432
         ToPort: 5432
 
+  PersonalHTTPIngress:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Personal HTTP Ingress
+      GroupDescription: Private access via HTTP from My Location(s)
+      VpcId: !Ref SelectedVPC
+      SecurityGroupIngress:
+      - CidrIp: !Ref SecurityGroupIngressCIDRHome
+        Description: Home
+        IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+      - CidrIp: !Ref SecurityGroupIngressCIDRWork
+        Description: Work
+        IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+
 Outputs:
   PersonalSSHIngress:
     Description: Direct access via SSH from My Location(s)
@@ -93,6 +111,11 @@ Outputs:
     Value: !Ref PersonalPostgresIngress
     Export:
       Name: PersonalPostgresIngress
+  PersonalHTTPIngress:
+    Description: Private access via HTTP from My Location(s)
+    Value: !Ref PersonalHTTPIngress
+    Export:
+      Name: PersonalHTTPIngress
 
 Metadata:
   AWS::CloudFormation::Interface:

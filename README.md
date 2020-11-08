@@ -29,7 +29,7 @@ Alternatively, using a file (which is ignored from this repo on account of obscu
   {
     "ParameterKey": "SecurityGroupIngressCIDRWork",
     "ParameterValue": ""
-  },
+  }
 ]
 ```
 

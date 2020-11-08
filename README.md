@@ -69,6 +69,24 @@ aws cloudformation create-stack --stack-name ecs-profiles \
     --capabilities CAPABILITY_IAM
 ```
 
+## Databases
+
+Generic, shared Databases Instances are made available in this repository.&dagger;  They use AWS Secrets Manager
+to create (and cycle) Master passwords with the username "root".  Retrieve the Secret from the
+[AWS Console](https://console.aws.amazon.com/secretsmanager/home?region=us-east-1#/listSecrets)
+and use that to log into the Instance and create individual databases with separate credentials
+as needed (presumably stored in SSM).  To install a Database Instance, perform the following (e.g., for MySQL):
+
+```bash
+aws cloudformation create-stack --stack-name database-shared-mysql \
+    --template-body file://database-mysql-stack.yml \
+    --parameters file://database-mysql-parameters.json
+```
+
+&dagger;Note that the purpose of a shared Database Instance is for cost-savings during prototyping,
+experimentation, development, etc. Projects of scale or public consumption are strongly encouraged
+to use dedicated, isolated instances.
+
 ## CloudFormation CI Pipeline
 
 As CloudFormation promotes managing infrastructure with code, it is possible

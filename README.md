@@ -53,7 +53,7 @@ aws cloudformation update-stack --stack-name personal-security-groups \
 
 Security Groups for common HTTP(S) applications.
 
-```base
+```bash
 aws cloudformation create-stack --stack-name http-security-groups \
     --template-body file://http-security-groups.yml \
     --parameters file://http-security-groups-parameters.json
@@ -63,10 +63,25 @@ aws cloudformation create-stack --stack-name http-security-groups \
 
 Manages Instance Profiles (Roles) for Common ECS Usage
 
-```base
+```bash
 aws cloudformation create-stack --stack-name ecs-profiles \
     --template-body file://ecs-profiles.yml \
     --capabilities CAPABILITY_IAM
+```
+
+## New Relic IAM Role
+
+New Relic is capable of monitoring AWS infrastructure with basic metrics if given proper permission.
+As per [these instructions](https://docs.newrelic.com/docs/integrations/amazon-integrations/get-started/connect-aws-infrastructure), an IAM Role must be created for New Relic to assume.  Such a ReadOnly role for New Relic can
+be created with this template.
+
+```bash
+NEW_RELIC_ACCOUNT_ID="Enter NR Account ID Here"
+aws cloudformation create-stack --stack-name iam-new-relic-role \
+  --template-body file://iam-new-relic-role.yml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameters \
+    ParameterKey=NewRelicAccountId,ParameterValue=$NEW_RELIC_ACCOUNT_ID
 ```
 
 ## Databases

@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Creates a Role in IAM that New Relic can use to monitor infrastructure"
+
+Parameters:
+  NewRelicAccountId:
+    Description: "The Account ID of the New Relic Account to be linked"
+    Type: "String"
+
+# As per https://docs.newrelic.com/docs/integrations/amazon-integrations/get-started/connect-aws-infrastructure
+Resources:
+  ecsInstanceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Join [ "-", [ !Ref "AWS::Region", "NewRelicInfrastructure" ] ]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Action:
+          - "sts:AssumeRole"
+          Effect: "Allow"
+          Principal:
+            AWS: "arn:aws:iam::754728514883:root"
+          Condition:
+            StringEquals:
+              sts:ExternalId: !Ref NewRelicAccountId
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/ReadOnlyAccess
+      Policies:
+      - PolicyName: !Join [ "-", [ !Ref "AWS::Region", "NewRelicBudget" ] ]
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action:
+            - 'budgets:ViewBudget'
+            Effect: Allow
+            Resource: '*'

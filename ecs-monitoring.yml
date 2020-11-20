@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Provides Monitoring (APM, Logging, Etc) Capabilities for the Provided Stack"
+
+Parameters:
+  TargetClusterName:
+    Description: "The name of the Cluster to apply the monitoring configurations"
+    Type: "String"
+  NewReliceLicenseSecretPath:
+    Description: "The SSM Secret Path of the New Relic License Key to use for monitoring"
+    Type: "String"
+
+Resources:
+  TaskDefinitionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - 'ecs-tasks.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+      - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+      Policies:
+      - PolicyName: !Sub "${AWS::StackName}-task-execution"
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'ssm:GetParameters'
+            - 'secretsmanager:GetSecretValue'
+            - 'kms:Decrypt'
+            Resource:
+            - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${NewReliceLicenseSecretPath}'
+
+  NewRelicInfrastructureTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: "newrelic-infra"
+      RequiresCompatibilities:
+        - EC2
+      NetworkMode: host
+      ExecutionRoleArn: !Ref TaskDefinitionRole
+      Volumes:
+        - Name: host_root_fs
+          Host:
+            SourcePath: "/"
+        - Name: docker_socket
+          Host:
+            SourcePath: "/var/run/docker.sock"
+      ContainerDefinitions:
+          - PortMappings: []
+            Cpu: 200
+            Memory: 384
+            Environment:
+              - Name: NRIA_OVERRIDE_HOST_ROOT
+                Value: "/host"
+              - Name: NRIA_PASSTHROUGH_ENVIRONMENT
+                Value: ECS_CONTAINER_METADATA_URI,ENABLE_NRI_ECS
+              - Name: ENABLE_NRI_ECS
+                Value: "true"
+              - Name: NRIA_VERBOSE
+                Value: 0
+              - Name: "NRIA_CUSTOM_ATTRIBUTES"
+                Value: '{"nrDeployMethod":"cloudFormation"}'
+            Secrets:
+              - Name: NRIA_LICENSE_KEY
+                ValueFrom: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${NewReliceLicenseSecretPath}'
+            MountPoints:
+              - ReadOnly: true
+                ContainerPath: "/host"
+                SourceVolume: host_root_fs
+              - ReadOnly: false
+                ContainerPath: "/var/run/docker.sock"
+                SourceVolume: docker_socket
+            VolumesFrom: []
+            Image: "newrelic/infrastructure-bundle:1.5.0"
+            Essential: true
+            ReadonlyRootFilesystem: false
+            Privileged: true
+            Name: "newrelic-infra"
+
+  MonitoringService:
+    Type: "AWS::ECS::Service"
+    Properties:
+      LaunchType: EC2
+      SchedulingStrategy: DAEMON
+      Cluster: !Ref TargetClusterName
+      ServiceName: !Sub "${AWS::StackName}-newrelic-infrastructure"
+      TaskDefinition: !Ref NewRelicInfrastructureTask

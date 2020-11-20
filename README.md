@@ -82,7 +82,26 @@ aws cloudformation create-stack --stack-name iam-new-relic-role \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameters \
     ParameterKey=NewRelicAccountId,ParameterValue=$NEW_RELIC_ACCOUNT_ID
+
 ```
+## Additional Infrastructure Monitoring
+New Relic Infrastructure Monitoring can be added to any cluster via a container that attaches to the EC2 host(s) of said cluster.
+By specifying a "Target Cluster", as well as a path to the "New Relic API Key Secret", the infrastructure instrumentation
+becomes possible by creating a generic stack from this project:
+
+```bash
+STACK_NAME=""
+TARGET_CLUSTER=""
+SSM_LICENSE_PATH=""
+aws cloudformation create-stack --stack-name $STACK_NAME-monitoring \
+  --template-body file://ecs-monitoring.yml \
+  --capabilities CAPABILITY_IAM \
+  --parameters \
+  ParameterKey="NewReliceLicenseSecretPath",ParameterValue=$SSM_LICENSE_PATH \
+  ParameterKey="TargetClusterName",ParameterValue=$TARGET_CLUSTER
+```
+
+NOTE: The `$STACK_NAME` parameter has no bearing on actual functionality, but simply affects the name of the monitoring stack in CloudFormation.
 
 ## Databases
 

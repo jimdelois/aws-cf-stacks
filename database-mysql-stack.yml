@@ -8,10 +8,13 @@ Parameters:
   DatabaseSnapshotName:
     Type: "String"
     Default: ""
+  GenericSharedClusterSecurityGroupId:
+    Type: "String"
+    Default: ""
 
 Conditions:
   UseDatabaseSnapshot: !Not [ !Equals [ !Ref DatabaseSnapshotName, "" ] ]
-
+  AttachSharedEKSClusterIngress: !Not [ !Equals [ !Ref GenericSharedClusterSecurityGroupId, "" ] ]
 
 Resources:
 
@@ -27,6 +30,16 @@ Resources:
       GroupName: "Shared MySQL RDS"
       GroupDescription: !Sub "Security Group for Shared MySQL RDS (${SelectedVPC})"
       VpcId: !Ref SelectedVPC
+
+  GenericSharedClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: AttachSharedEKSClusterIngress
+    Properties:
+      GroupId: !GetAtt DatabaseSecurityGroup.GroupId
+      SourceSecurityGroupId: !Ref GenericSharedClusterSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
 
   ###########################################################
   #                                                         #

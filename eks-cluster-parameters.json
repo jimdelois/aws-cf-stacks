@@ -1,0 +1,34 @@
+[
+  {
+    "ParameterKey": "ClusterName",
+    "ParameterValue": "GenericSharedCluster"
+  },
+  {
+    "ParameterKey": "SshKeyPair",
+    "ParameterValue": "AWS-Jim DeLois"
+  },
+  {
+    "ParameterKey": "SubnetId1",
+    "ParameterValue": "subnet-84fcacd9"
+  },
+  {
+    "ParameterKey": "SubnetId2",
+    "ParameterValue": "subnet-1ad1d47e"
+  },
+  {
+    "ParameterKey": "SubnetId3",
+    "ParameterValue": "subnet-cd0955e2"
+  },
+  {
+    "ParameterKey": "NodeGroup1MinSize",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "NodeGroup1DesiredSize",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "NodeGroup1MaxSize",
+    "ParameterValue": "3"
+  }
+]

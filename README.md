@@ -121,6 +121,19 @@ aws cloudformation create-stack --stack-name database-shared-mysql \
 experimentation, development, etc. Projects of scale or public consumption are strongly encouraged
 to use dedicated, isolated instances.
 
+## EKS Cluster
+```
+aws cloudformation create-stack --stack-name eks-generic-cluster --template-body file://eks-cluster.yml --parameters file://eks-cluster-parameters.json --capabilities CAPABILITY_IAM
+```
+
+Update any Database Stacks (if necessary)...
+For now, manually grab the Security Group ID automatically created by AWS.
+```
+aws cloudformation update-stack --stack-name database-shared-mysql \
+    --template-body file://database-mysql-stack.yml \
+    --parameters file://database-mysql-parameters.json
+```
+
 ## CloudFormation CI Pipeline
 
 As CloudFormation promotes managing infrastructure with code, it is possible

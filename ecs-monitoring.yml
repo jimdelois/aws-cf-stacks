@@ -78,7 +78,7 @@ Resources:
                 ContainerPath: "/var/run/docker.sock"
                 SourceVolume: docker_socket
             VolumesFrom: []
-            Image: "newrelic/infrastructure-bundle:1.5.0"
+            Image: "newrelic/infrastructure:latest"
             Essential: true
             ReadonlyRootFilesystem: false
             Privileged: true
